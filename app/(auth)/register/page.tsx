@@ -111,7 +111,7 @@ export default function RegisterPage() {
 
     if (!parsed.success) {
       const fieldErrors: FieldErrors = {};
-      parsed.error.errors.forEach((err) => {
+      parsed.error.issues.forEach((err) => {
         const key = err.path[0] as keyof FormData;
         if (!fieldErrors[key]) fieldErrors[key] = err.message;
       });
