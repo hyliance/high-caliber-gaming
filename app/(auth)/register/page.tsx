@@ -30,7 +30,7 @@ const registerSchema = z.object({
   confirmPassword: z.string(),
   dateOfBirth: z.string().min(1, "Date of birth is required"),
   country: z.string().min(1, "Please select a country"),
-  terms: z.literal(true, { errorMap: () => ({ message: "You must accept the terms of service" }) }),
+  terms: z.literal(true, { error: "You must accept the terms of service" }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
