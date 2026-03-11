@@ -1,0 +1,1381 @@
+// High Caliber Gaming — Full Database Schema
+// PostgreSQL 16 | Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum GlobalRole {
+  GUEST
+  MEMBER
+  VERIFIED_MEMBER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum TournamentFormat {
+  SINGLE_ELIMINATION
+  DOUBLE_ELIMINATION
+  ROUND_ROBIN
+  SWISS
+}
+
+enum MatchStatus {
+  PENDING
+  IN_PROGRESS
+  AWAITING_REPORT
+  DISPUTED
+  COMPLETED
+  CANCELLED
+  FORFEITED
+}
+
+enum WagerStatus {
+  PENDING
+  ESCROWED
+  COMPLETED
+  DISPUTED
+  REFUNDED
+  CANCELLED
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  WAGER_LOCK
+  WAGER_WIN
+  WAGER_LOSS
+  WAGER_REFUND
+  TOURNAMENT_ENTRY
+  TOURNAMENT_PRIZE
+  COACHING_PAYMENT
+  COACHING_PAYOUT
+  PLATFORM_FEE
+}
+
+enum CommunityType {
+  PUBLIC
+  RESTRICTED
+  PRIVATE
+}
+
+enum PostType {
+  TEXT
+  IMAGE
+  VIDEO
+  LINK
+  POLL
+}
+
+enum ClanRole {
+  FOUNDER
+  LEADER
+  OFFICER
+  VETERAN
+  MEMBER
+  RECRUIT
+}
+
+enum OrgRole {
+  OWNER
+  GENERAL_MANAGER
+  HEAD_COACH
+  ASSISTANT_COACH
+  PLAYER
+  ANALYST
+  CONTENT_CREATOR
+  STAFF
+}
+
+enum TournamentStatus {
+  DRAFT
+  OPEN
+  CHECK_IN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum SeasonStatus {
+  UPCOMING
+  ACTIVE
+  ENDED
+  ARCHIVED
+}
+
+enum GameTitleStatus {
+  ACTIVE
+  BETA
+  ARCHIVED
+}
+
+enum CoachApplicationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum CoachTier {
+  VERIFIED
+  ELITE
+  MASTER
+}
+
+enum CoachVisibility {
+  ACTIVE
+  HIDDEN
+  SUSPENDED
+}
+
+enum SessionType {
+  VOD_REVIEW
+  LIVE_1ON1
+  GROUP_SESSION
+  STRATEGY_BREAKDOWN
+  REPLAY_ANALYSIS
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED_BY_PLAYER
+  CANCELLED_BY_COACH
+  NO_SHOW
+  DISPUTED
+}
+
+enum LeagueStage {
+  GROUP
+  PLAYOFFS
+  COMPLETED
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  CLOSED
+}
+
+enum NotificationType {
+  MATCH_CHALLENGE
+  MATCH_RESULT
+  MATCH_DISPUTE
+  WAGER_REQUEST
+  WAGER_OUTCOME
+  TOURNAMENT_START
+  TOURNAMENT_RESULT
+  CLAN_INVITE
+  CLAN_WAR
+  ORG_INVITE
+  COACH_BOOKING
+  COACH_REVIEW
+  POST_REPLY
+  POST_MENTION
+  SYSTEM_ANNOUNCEMENT
+  TITLE_REQUEST_STATUS
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  CHEATING
+  INAPPROPRIATE_CONTENT
+  IMPERSONATION
+  MATCH_FIXING
+  OTHER
+}
+
+// ============================================================
+// USERS & AUTH
+// ============================================================
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  emailVerified   DateTime?
+  hashedPassword  String?
+  gamerTag        String   @unique
+  displayName     String
+  avatarUrl       String?
+  bannerUrl       String?
+  bio             String?
+  globalRole      GlobalRole @default(MEMBER)
+  kycStatus       VerificationStatus @default(UNVERIFIED)
+  kycDocumentId   String?
+  isAgeVerified   Boolean @default(false)
+  dateOfBirth     DateTime?
+  country         String?
+  region          String?
+  twitchUrl       String?
+  youtubeUrl      String?
+  twitterUrl      String?
+  streamStatus    Boolean @default(false)
+  trustScore      Int @default(100)
+  isBanned        Boolean @default(false)
+  banReason       String?
+  bannedAt        DateTime?
+  bannedUntil     DateTime?
+  lastSeen        DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  accounts           Account[]
+  sessions           Session[]
+  wallet             Wallet?
+  gamingAccounts     GamingAccount[]
+  ladderEntries      LadderEntry[]
+  matchesAsP1        Match[] @relation("MatchPlayer1")
+  matchesAsP2        Match[] @relation("MatchPlayer2")
+  matchReports       MatchReport[]
+  wagersInitiated    Wager[] @relation("WagerInitiator")
+  wagersReceived     Wager[] @relation("WagerReceiver")
+  posts              Post[]
+  comments           Comment[]
+  communities        CommunityMember[]
+  createdCommunities Community[] @relation("CommunityCreator")
+  clanMembership     ClanMember?
+  orgMemberships     OrganizationMember[]
+  notifications      Notification[]
+  sentMessages       DirectMessage[] @relation("MessageSender")
+  receivedMessages   DirectMessage[] @relation("MessageReceiver")
+  coachApplication   CoachApplication?
+  coachProfile       CoachProfile?
+  coachBookings      CoachBooking[] @relation("StudentBookings")
+  reviewsGiven       CoachReview[] @relation("ReviewAuthor")
+  blockedUsers       UserBlock[] @relation("Blocker")
+  blockedBy          UserBlock[] @relation("Blocked")
+  reports            Report[] @relation("Reporter")
+  reportedContent    Report[] @relation("Reported")
+  adminActions       AdminAction[] @relation("AdminActor")
+  adminActionsTarget AdminAction[] @relation("AdminTarget")
+  titleRequests      GameTitleRequest[]
+  seasonRewards      SeasonReward[]
+  trophies           UserTrophy[]
+  savedPosts         SavedPost[]
+  postVotes          PostVote[]
+  commentVotes       CommentVote[]
+  tournamentEntries  TournamentEntry[]
+  leagueEntries      LeagueEntry[]
+  disputesInitiated  Dispute[] @relation("DisputeInitiator")
+  disputesModerating Dispute[] @relation("DisputeModerator")
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model GamingAccount {
+  id         String   @id @default(cuid())
+  userId     String
+  platform   String   // PSN, XBOX, STEAM, BATTLENET, RIOT, EPIC
+  accountId  String
+  username   String
+  verified   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
+  @@map("gaming_accounts")
+}
+
+model UserBlock {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id])
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id])
+
+  @@unique([blockerId, blockedId])
+  @@map("user_blocks")
+}
+
+// ============================================================
+// WALLET & PAYMENTS
+// ============================================================
+
+model Wallet {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  balanceCents     Int      @default(0)
+  escrowCents      Int      @default(0)
+  creditsCents     Int      @default(0)
+  totalEarnedCents Int      @default(0)
+  totalWagered     Int      @default(0)
+  dailyWagerCap    Int      @default(50000)  // $500
+  weeklyWagerCap   Int      @default(200000) // $2000
+  selfExclusion    Boolean  @default(false)
+  stripeCustomerId String?
+  stripeAccountId  String?  // Stripe Connect for payouts
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id])
+  transactions     Transaction[]
+
+  @@map("wallets")
+}
+
+model Transaction {
+  id              String          @id @default(cuid())
+  walletId        String
+  type            TransactionType
+  amountCents     Int
+  feeCents        Int             @default(0)
+  balanceAfter    Int
+  description     String
+  stripePaymentId String?
+  referenceId     String?         // match, wager, tournament, or booking id
+  referenceType   String?
+  metadata        Json?
+  createdAt       DateTime        @default(now())
+  wallet          Wallet          @relation(fields: [walletId], references: [id])
+
+  @@map("transactions")
+}
+
+// ============================================================
+// GAME TITLES
+// ============================================================
+
+model GameTitle {
+  id               String          @id @default(cuid())
+  officialName     String
+  shortName        String
+  abbreviation     String
+  coverArtUrl      String?
+  iconUrl          String?
+  publisher        String
+  genreTags        String[]
+  platforms        String[]        // PC, PS4, PS5, XBOX_ONE, XBOX_SERIES, SWITCH
+  status           GameTitleStatus @default(ACTIVE)
+  apiIntegration   String?         // riot, psn, xbox, steam, battlenet
+  communityId      String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  gameModes        GameMode[]
+  ladders          Ladder[]
+  tournaments      Tournament[]
+  leagues          League[]
+  coachProfiles    CoachProfileGame[]
+  titleRequests    GameTitleRequest[]
+  community        Community?      @relation(fields: [communityId], references: [id])
+
+  @@map("game_titles")
+}
+
+model GameMode {
+  id            String    @id @default(cuid())
+  gameTitleId   String
+  name          String
+  teamSizes     Int[]
+  defaultFormat String    @default("BO1") // BO1, BO3, BO5
+  mapPool       String[]
+  verifyMethod  String    @default("SCREENSHOT") // SCREENSHOT, API, HYBRID
+  reportWindow  Int       @default(30) // minutes
+  createdAt     DateTime  @default(now())
+  gameTitle     GameTitle @relation(fields: [gameTitleId], references: [id])
+  ladders       Ladder[]
+  tournaments   Tournament[]
+
+  @@map("game_modes")
+}
+
+model GameTitleRequest {
+  id            String   @id @default(cuid())
+  requesterId   String
+  gameName      String
+  publisher     String
+  platforms     String[]
+  proposedModes String[]
+  justification String   @db.Text
+  status        String   @default("PENDING") // PENDING, UNDER_REVIEW, APPROVED, REJECTED, MORE_INFO
+  reviewNote    String?
+  adminNote     String?
+  gameTitleId   String?  // set when approved
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  requester     User     @relation(fields: [requesterId], references: [id])
+  gameTitle     GameTitle? @relation(fields: [gameTitleId], references: [id])
+
+  @@map("game_title_requests")
+}
+
+// ============================================================
+// COMPETITIVE — LADDERS & SEASONS
+// ============================================================
+
+model Ladder {
+  id            String   @id @default(cuid())
+  gameTitleId   String
+  gameModeId    String
+  name          String
+  description   String?
+  isActive      Boolean  @default(true)
+  isPrivate     Boolean  @default(false)
+  ratingSystem  String   @default("ELO") // ELO, GLICKO2
+  pointsPerWin  Int      @default(3)
+  pointsPerLoss Int      @default(0)
+  streakBonus   Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  gameTitle     GameTitle    @relation(fields: [gameTitleId], references: [id])
+  gameMode      GameMode     @relation(fields: [gameModeId], references: [id])
+  seasons       Season[]
+  matches       Match[]
+
+  @@map("ladders")
+}
+
+model Season {
+  id          String       @id @default(cuid())
+  ladderId    String
+  name        String
+  seasonNumber Int
+  status      SeasonStatus @default(UPCOMING)
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  ladder      Ladder       @relation(fields: [ladderId], references: [id])
+  entries     LadderEntry[]
+  rewards     SeasonReward[]
+
+  @@map("seasons")
+}
+
+model LadderEntry {
+  id         String   @id @default(cuid())
+  seasonId   String
+  userId     String
+  teamId     String?
+  elo        Int      @default(1000)
+  wins       Int      @default(0)
+  losses     Int      @default(0)
+  streak     Int      @default(0)
+  points     Int      @default(0)
+  rank       Int?
+  tier       String   @default("BRONZE") // BRONZE, SILVER, GOLD, PLATINUM, DIAMOND, MASTER
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  season     Season   @relation(fields: [seasonId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@unique([seasonId, userId])
+  @@map("ladder_entries")
+}
+
+model SeasonReward {
+  id          String   @id @default(cuid())
+  seasonId    String
+  userId      String
+  finalRank   Int
+  finalTier   String
+  creditsCents Int     @default(0)
+  badge       String?
+  claimedAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  season      Season   @relation(fields: [seasonId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@map("season_rewards")
+}
+
+model UserTrophy {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String
+  iconUrl     String?
+  awardedAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@map("user_trophies")
+}
+
+// ============================================================
+// MATCHES
+// ============================================================
+
+model Match {
+  id              String      @id @default(cuid())
+  ladderId        String?
+  tournamentId    String?
+  leagueId        String?
+  player1Id       String
+  player2Id       String
+  team1Id         String?
+  team2Id         String?
+  status          MatchStatus @default(PENDING)
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  winnerId        String?
+  winnerTeamId    String?
+  player1Score    Int?
+  player2Score    Int?
+  gameTitleId     String?
+  gameMode        String?
+  mapPool         String[]
+  seriesFormat    String      @default("BO1")
+  reportDeadline  DateTime?
+  isWager         Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  player1         User        @relation("MatchPlayer1", fields: [player1Id], references: [id])
+  player2         User        @relation("MatchPlayer2", fields: [player2Id], references: [id])
+  ladder          Ladder?     @relation(fields: [ladderId], references: [id])
+  tournament      Tournament? @relation(fields: [tournamentId], references: [id])
+  league          League?     @relation(fields: [leagueId], references: [id])
+  reports         MatchReport[]
+  dispute         Dispute?
+  wager           Wager?
+  chatMessages    MatchChatMessage[]
+
+  @@map("matches")
+}
+
+model MatchReport {
+  id            String   @id @default(cuid())
+  matchId       String
+  reporterId    String
+  winnerClaimed String   // player1 or player2
+  score         String?
+  screenshotUrl String?
+  videoUrl      String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  match         Match    @relation(fields: [matchId], references: [id])
+  reporter      User     @relation(fields: [reporterId], references: [id])
+
+  @@map("match_reports")
+}
+
+model MatchChatMessage {
+  id        String   @id @default(cuid())
+  matchId   String
+  senderId  String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  match     Match    @relation(fields: [matchId], references: [id])
+
+  @@map("match_chat_messages")
+}
+
+model Dispute {
+  id             String        @id @default(cuid())
+  matchId        String        @unique
+  initiatorId    String
+  moderatorId    String?
+  status         DisputeStatus @default(OPEN)
+  reason         String        @db.Text
+  evidenceUrls   String[]
+  moderatorNotes String?       @db.Text
+  resolution     String?       @db.Text
+  winnerId       String?
+  openedAt       DateTime      @default(now())
+  respondedAt    DateTime?
+  resolvedAt     DateTime?
+
+  match          Match         @relation(fields: [matchId], references: [id])
+  initiator      User          @relation("DisputeInitiator", fields: [initiatorId], references: [id])
+  moderator      User?         @relation("DisputeModerator", fields: [moderatorId], references: [id])
+
+  @@map("disputes")
+}
+
+// ============================================================
+// WAGERING
+// ============================================================
+
+model Wager {
+  id              String      @id @default(cuid())
+  matchId         String      @unique
+  initiatorId     String
+  receiverId      String
+  amountCents     Int
+  platformFeePct  Int         @default(7)
+  status          WagerStatus @default(PENDING)
+  escrowedAt      DateTime?
+  completedAt     DateTime?
+  winnerId        String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  match           Match       @relation(fields: [matchId], references: [id])
+  initiator       User        @relation("WagerInitiator", fields: [initiatorId], references: [id])
+  receiver        User        @relation("WagerReceiver", fields: [receiverId], references: [id])
+
+  @@map("wagers")
+}
+
+// ============================================================
+// TOURNAMENTS
+// ============================================================
+
+model Tournament {
+  id              String           @id @default(cuid())
+  organizerId     String?
+  gameTitleId     String
+  gameModeId      String
+  name            String
+  description     String?          @db.Text
+  bannerUrl       String?
+  format          TournamentFormat @default(SINGLE_ELIMINATION)
+  status          TournamentStatus @default(DRAFT)
+  entryFeeCents   Int              @default(0)
+  prizePoolCents  Int              @default(0)
+  prizeDistribution Json?          // e.g. [60, 25, 15] for top 3
+  maxCapacity     Int              @default(64)
+  currentEntrants Int              @default(0)
+  checkInMinutes  Int              @default(30)
+  checkInStart    DateTime?
+  startDate       DateTime
+  endDate         DateTime?
+  streamUrl       String?
+  isPublic        Boolean          @default(true)
+  seedingType     String           @default("OPEN") // OPEN, MANUAL, RANK_BASED
+  isRecurring     Boolean          @default(false)
+  recurringSchedule String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  gameTitle       GameTitle        @relation(fields: [gameTitleId], references: [id])
+  gameMode        GameMode         @relation(fields: [gameModeId], references: [id])
+  entries         TournamentEntry[]
+  brackets        TournamentBracket[]
+  matches         Match[]
+
+  @@map("tournaments")
+}
+
+model TournamentEntry {
+  id           String   @id @default(cuid())
+  tournamentId String
+  userId       String?
+  teamId       String?
+  seed         Int?
+  checkedIn    Boolean  @default(false)
+  eliminated   Boolean  @default(false)
+  finalPlace   Int?
+  createdAt    DateTime @default(now())
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  user         User?      @relation(fields: [userId], references: [id])
+
+  @@map("tournament_entries")
+}
+
+model TournamentBracket {
+  id           String   @id @default(cuid())
+  tournamentId String
+  round        Int
+  position     Int
+  matchId      String?
+  winnerId     String?
+  createdAt    DateTime @default(now())
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+
+  @@map("tournament_brackets")
+}
+
+// ============================================================
+// LEAGUES
+// ============================================================
+
+model League {
+  id              String      @id @default(cuid())
+  gameTitleId     String
+  organizerId     String?
+  name            String
+  description     String?     @db.Text
+  bannerUrl       String?
+  stage           LeagueStage @default(GROUP)
+  status          TournamentStatus @default(DRAFT)
+  startDate       DateTime
+  endDate         DateTime?
+  pointsPerWin    Int         @default(3)
+  pointsPerDraw   Int         @default(1)
+  pointsPerLoss   Int         @default(0)
+  teamsPerGroup   Int         @default(4)
+  teamsAdvance    Int         @default(2)
+  prizePoolCents  Int         @default(0)
+  isMultiTitle    Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  gameTitle       GameTitle   @relation(fields: [gameTitleId], references: [id])
+  groups          LeagueGroup[]
+  entries         LeagueEntry[]
+  matches         Match[]
+
+  @@map("leagues")
+}
+
+model LeagueGroup {
+  id        String   @id @default(cuid())
+  leagueId  String
+  name      String
+  createdAt DateTime @default(now())
+
+  league    League   @relation(fields: [leagueId], references: [id])
+  standings LeagueStanding[]
+
+  @@map("league_groups")
+}
+
+model LeagueStanding {
+  id              String   @id @default(cuid())
+  groupId         String
+  userId          String?
+  teamId          String?
+  wins            Int      @default(0)
+  losses          Int      @default(0)
+  ties            Int      @default(0)
+  points          Int      @default(0)
+  goalDifferential Int     @default(0)
+  rank            Int?
+  advanced        Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+
+  group           LeagueGroup @relation(fields: [groupId], references: [id])
+
+  @@map("league_standings")
+}
+
+model LeagueEntry {
+  id        String   @id @default(cuid())
+  leagueId  String
+  userId    String?
+  teamId    String?
+  groupId   String?
+  createdAt DateTime @default(now())
+
+  league    League   @relation(fields: [leagueId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@map("league_entries")
+}
+
+// ============================================================
+// SOCIAL FEED
+// ============================================================
+
+model Post {
+  id            String   @id @default(cuid())
+  authorId      String
+  communityId   String?
+  type          PostType @default(TEXT)
+  title         String
+  content       String?  @db.Text
+  imageUrl      String?
+  videoUrl      String?
+  linkUrl       String?
+  linkPreview   Json?
+  tags          String[]
+  gameTitleId   String?
+  tournamentId  String?
+  matchId       String?
+  upvotes       Int      @default(0)
+  downvotes     Int      @default(0)
+  commentCount  Int      @default(0)
+  isSponsored   Boolean  @default(false)
+  isPinned      Boolean  @default(false)
+  isLocked      Boolean  @default(false)
+  isRemoved     Boolean  @default(false)
+  hotScore      Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  author        User          @relation(fields: [authorId], references: [id])
+  community     Community?    @relation(fields: [communityId], references: [id])
+  comments      Comment[]
+  votes         PostVote[]
+  savedBy       SavedPost[]
+  pollOptions   PollOption[]
+  reports       Report[]      @relation("PostReports")
+  flairs        PostFlair[]
+
+  @@map("posts")
+}
+
+model PostVote {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  value     Int      // 1 or -1
+  createdAt DateTime @default(now())
+
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+  @@map("post_votes")
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  postId      String
+  authorId    String
+  parentId    String?
+  content     String   @db.Text
+  upvotes     Int      @default(0)
+  downvotes   Int      @default(0)
+  isRemoved   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  post        Post         @relation(fields: [postId], references: [id])
+  author      User         @relation(fields: [authorId], references: [id])
+  parent      Comment?     @relation("CommentReplies", fields: [parentId], references: [id])
+  replies     Comment[]    @relation("CommentReplies")
+  votes       CommentVote[]
+  reports     Report[]     @relation("CommentReports")
+
+  @@map("comments")
+}
+
+model CommentVote {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  value     Int      // 1 or -1
+  createdAt DateTime @default(now())
+
+  comment   Comment  @relation(fields: [commentId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([commentId, userId])
+  @@map("comment_votes")
+}
+
+model SavedPost {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  savedAt   DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId])
+  @@map("saved_posts")
+}
+
+model PollOption {
+  id        String   @id @default(cuid())
+  postId    String
+  text      String
+  votes     Int      @default(0)
+  post      Post     @relation(fields: [postId], references: [id])
+
+  @@map("poll_options")
+}
+
+model PostFlair {
+  id          String   @id @default(cuid())
+  postId      String
+  communityId String?
+  text        String
+  color       String?
+  post        Post     @relation(fields: [postId], references: [id])
+
+  @@map("post_flairs")
+}
+
+// ============================================================
+// COMMUNITIES
+// ============================================================
+
+model Community {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  name        String
+  description String?       @db.Text
+  bannerUrl   String?
+  iconUrl     String?
+  type        CommunityType @default(PUBLIC)
+  creatorId   String
+  rules       Json?
+  memberCount Int           @default(0)
+  postCount   Int           @default(0)
+  gameId      String?
+  genre       String?
+  region      String?
+  isVerified  Boolean       @default(false)
+  isSuspended Boolean       @default(false)
+  wikiContent String?       @db.Text
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  creator     User          @relation("CommunityCreator", fields: [creatorId], references: [id])
+  members     CommunityMember[]
+  posts       Post[]
+  gameTitles  GameTitle[]
+  moderators  CommunityModerator[]
+
+  @@map("communities")
+}
+
+model CommunityMember {
+  id          String   @id @default(cuid())
+  communityId String
+  userId      String
+  joinedAt    DateTime @default(now())
+
+  community   Community @relation(fields: [communityId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@unique([communityId, userId])
+  @@map("community_members")
+}
+
+model CommunityModerator {
+  id          String   @id @default(cuid())
+  communityId String
+  userId      String
+  addedAt     DateTime @default(now())
+
+  community   Community @relation(fields: [communityId], references: [id])
+
+  @@unique([communityId, userId])
+  @@map("community_moderators")
+}
+
+// ============================================================
+// DIRECT MESSAGES
+// ============================================================
+
+model DirectMessage {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  threadId    String
+  content     String   @db.Text
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  sender      User     @relation("MessageSender", fields: [senderId], references: [id])
+  receiver    User     @relation("MessageReceiver", fields: [receiverId], references: [id])
+
+  @@map("direct_messages")
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  body        String
+  referenceId String?
+  referenceType String?
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  user        User             @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+// ============================================================
+// CLANS
+// ============================================================
+
+model Clan {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  tag         String   @unique
+  logoUrl     String?
+  bannerUrl   String?
+  description String?
+  motd        String?  // Message of the Day
+  memberCap   Int      @default(50)
+  memberCount Int      @default(0)
+  isPublic    Boolean  @default(true)
+  season      String?
+  clanPoints  Int      @default(0)
+  warWins     Int      @default(0)
+  warLosses   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     ClanMember[]
+  wars        ClanWar[]    @relation("ClanWar1")
+  warsAs2     ClanWar[]    @relation("ClanWar2")
+  trophies    ClanTrophy[]
+
+  @@map("clans")
+}
+
+model ClanMember {
+  id        String   @id @default(cuid())
+  clanId    String
+  userId    String   @unique
+  role      ClanRole @default(MEMBER)
+  joinedAt  DateTime @default(now())
+
+  clan      Clan     @relation(fields: [clanId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("clan_members")
+}
+
+model ClanWar {
+  id          String   @id @default(cuid())
+  clan1Id     String
+  clan2Id     String
+  startDate   DateTime
+  endDate     DateTime?
+  clan1Score  Int      @default(0)
+  clan2Score  Int      @default(0)
+  winnerId    String?
+  isComplete  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  clan1       Clan     @relation("ClanWar1", fields: [clan1Id], references: [id])
+  clan2       Clan     @relation("ClanWar2", fields: [clan2Id], references: [id])
+
+  @@map("clan_wars")
+}
+
+model ClanTrophy {
+  id          String   @id @default(cuid())
+  clanId      String
+  name        String
+  description String
+  iconUrl     String?
+  awardedAt   DateTime @default(now())
+
+  clan        Clan     @relation(fields: [clanId], references: [id])
+  @@map("clan_trophies")
+}
+
+// ============================================================
+// ORGANIZATIONS
+// ============================================================
+
+model Organization {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  abbreviation    String
+  logoUrl         String?
+  bannerUrl       String?
+  primaryColor    String?
+  secondaryColor  String?
+  description     String?  @db.Text
+  country         String?
+  website         String?
+  isVerified      Boolean  @default(false)
+  isSuspended     Boolean  @default(false)
+  stripeAccountId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  members         OrganizationMember[]
+  teams           OrgTeam[]
+
+  @@map("organizations")
+}
+
+model OrgTeam {
+  id             String   @id @default(cuid())
+  orgId          String
+  gameTitleId    String?
+  name           String
+  createdAt      DateTime @default(now())
+
+  organization   Organization @relation(fields: [orgId], references: [id])
+
+  @@map("org_teams")
+}
+
+model OrganizationMember {
+  id         String   @id @default(cuid())
+  orgId      String
+  userId     String
+  role       OrgRole  @default(PLAYER)
+  gameTitle  String?
+  startDate  DateTime?
+  endDate    DateTime?
+  salary     Int?
+  createdAt  DateTime @default(now())
+
+  organization Organization @relation(fields: [orgId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@unique([orgId, userId])
+  @@map("organization_members")
+}
+
+// ============================================================
+// COACHING
+// ============================================================
+
+model CoachApplication {
+  id               String                 @id @default(cuid())
+  userId           String                 @unique
+  fullLegalName    String
+  country          String
+  primaryTitles    String[]
+  experienceLevel  String                 // AMATEUR, SEMI_PRO, PROFESSIONAL, FORMER_PRO
+  achievements     String                 @db.Text
+  biography        String                 @db.Text
+  sessionTypes     SessionType[]
+  portfolioUrls    String[]
+  agreedToTerms    Boolean                @default(false)
+  status           CoachApplicationStatus @default(PENDING)
+  adminNote        String?
+  internalNote     String?
+  rejectionReason  String?
+  cooldownUntil    DateTime?
+  isPermanentBan   Boolean                @default(false)
+  reapplicationCount Int                 @default(0)
+  previousAppId    String?
+  submittedAt      DateTime               @default(now())
+  reviewedAt       DateTime?
+  reviewedBy       String?
+
+  user             User @relation(fields: [userId], references: [id])
+
+  @@map("coach_applications")
+}
+
+model CoachProfile {
+  id              String          @id @default(cuid())
+  userId          String          @unique
+  displayName     String
+  bannerUrl       String?
+  bio             String          @db.Text
+  tier            CoachTier       @default(VERIFIED)
+  visibility      CoachVisibility @default(ACTIVE)
+  overallRating   Float           @default(0)
+  reviewCount     Int             @default(0)
+  sessionCount    Int             @default(0)
+  weeklySessionCap Int?
+  maxActiveStudents Int?
+  responseWindowHours Int         @default(24)
+  platformFeePct  Int             @default(17)
+  isCredVerified  Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user            User            @relation(fields: [userId], references: [id])
+  games           CoachProfileGame[]
+  availability    CoachAvailability[]
+  sessions        CoachSession[]
+  bookings        CoachBooking[]
+  reviews         CoachReview[]
+
+  @@map("coach_profiles")
+}
+
+model CoachProfileGame {
+  id            String       @id @default(cuid())
+  profileId     String
+  gameTitleId   String
+  sessionTypes  SessionType[]
+  createdAt     DateTime     @default(now())
+
+  profile       CoachProfile @relation(fields: [profileId], references: [id])
+  gameTitle     GameTitle    @relation(fields: [gameTitleId], references: [id])
+
+  @@unique([profileId, gameTitleId])
+  @@map("coach_profile_games")
+}
+
+model CoachSession {
+  id          String      @id @default(cuid())
+  profileId   String
+  type        SessionType
+  durationMin Int
+  gameTitleId String?
+  priceCents  Int
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+
+  profile     CoachProfile @relation(fields: [profileId], references: [id])
+
+  @@map("coach_sessions")
+}
+
+model CoachAvailability {
+  id        String   @id @default(cuid())
+  profileId String
+  dayOfWeek Int?     // 0=Sun, 1=Mon...6=Sat (null if one-off)
+  startTime String   // HH:MM
+  endTime   String   // HH:MM
+  date      DateTime? // for one-off slots
+  timezone  String   @default("UTC")
+  isBooked  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  profile   CoachProfile @relation(fields: [profileId], references: [id])
+
+  @@map("coach_availability")
+}
+
+model CoachBooking {
+  id                String        @id @default(cuid())
+  profileId         String
+  studentId         String
+  sessionId         String?
+  status            BookingStatus @default(PENDING)
+  scheduledAt       DateTime
+  durationMin       Int
+  priceCents        Int
+  platformFeeCents  Int
+  netPayoutCents    Int
+  stripePaymentId   String?
+  playerNotes       String?       @db.Text
+  coachNotes        String?       @db.Text
+  meetingLink       String?
+  reminderSent24h   Boolean       @default(false)
+  reminderSent1h    Boolean       @default(false)
+  cancellationNote  String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  profile           CoachProfile  @relation(fields: [profileId], references: [id])
+  student           User          @relation("StudentBookings", fields: [studentId], references: [id])
+  review            CoachReview?
+
+  @@map("coach_bookings")
+}
+
+model CoachReview {
+  id          String   @id @default(cuid())
+  profileId   String
+  bookingId   String   @unique
+  authorId    String
+  rating      Int      // 1–5
+  content     String   @db.Text
+  isPublished Boolean  @default(false)
+  isFlagged   Boolean  @default(false)
+  publishAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  profile     CoachProfile @relation(fields: [profileId], references: [id])
+  booking     CoachBooking @relation(fields: [bookingId], references: [id])
+  author      User         @relation("ReviewAuthor", fields: [authorId], references: [id])
+
+  @@map("coach_reviews")
+}
+
+// ============================================================
+// REPORTS & MODERATION
+// ============================================================
+
+model Report {
+  id          String       @id @default(cuid())
+  reporterId  String
+  reportedId  String?
+  reason      ReportReason
+  description String?      @db.Text
+  status      String       @default("PENDING") // PENDING, REVIEWED, RESOLVED, DISMISSED
+  postId      String?
+  commentId   String?
+  resolvedBy  String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  reporter    User         @relation("Reporter", fields: [reporterId], references: [id])
+  reported    User?        @relation("Reported", fields: [reportedId], references: [id])
+  post        Post?        @relation("PostReports", fields: [postId], references: [id])
+  comment     Comment?     @relation("CommentReports", fields: [commentId], references: [id])
+
+  @@map("reports")
+}
+
+model AdminAction {
+  id          String   @id @default(cuid())
+  actorId     String
+  targetId    String?
+  action      String   // BAN, UNBAN, WARN, DELETE_POST, SUSPEND_ORG, etc.
+  reason      String
+  metadata    Json?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  actor       User     @relation("AdminActor", fields: [actorId], references: [id])
+  target      User?    @relation("AdminTarget", fields: [targetId], references: [id])
+
+  @@map("admin_actions")
+}
+
+model PlatformAnnouncement {
+  id          String   @id @default(cuid())
+  title       String
+  body        String   @db.Text
+  type        String   @default("INFO") // INFO, WARNING, MAINTENANCE
+  isActive    Boolean  @default(true)
+  publishedAt DateTime @default(now())
+  expiresAt   DateTime?
+
+  @@map("platform_announcements")
+}

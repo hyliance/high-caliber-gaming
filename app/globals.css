@@ -1,0 +1,228 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Custom Fonts ──────────────────────────────────────────────────── */
+@font-face {
+  font-family: "KVC-Brute";
+  src: url("/fonts/KVC-Brute-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Azonix";
+  src: url("/fonts/Azonix.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
+
+/* ── Design Tokens ─────────────────────────────────────────────────── */
+@layer base {
+  :root {
+    /* Primary = HCG blue/cyan */
+    --background: 240 43% 5%;         /* #08080E */
+    --foreground: 0 0% 95%;
+    --card: 240 40% 8%;               /* #0D0D1A */
+    --card-foreground: 0 0% 95%;
+    --popover: 240 40% 8%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 198 100% 50%;          /* #00B4FF */
+    --primary-foreground: 240 43% 5%;
+    --secondary: 240 20% 14%;
+    --secondary-foreground: 0 0% 80%;
+    --muted: 240 20% 14%;
+    --muted-foreground: 240 5% 55%;
+    --accent: 198 100% 50%;           /* #00B4FF */
+    --accent-foreground: 240 43% 5%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 237 28% 16%;            /* #1E2035 */
+    --input: 237 28% 16%;
+    --ring: 198 100% 50%;
+    --radius: 0.5rem;
+  }
+}
+
+/* ── Base element styles ───────────────────────────────────────────── */
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: #08080E;
+    color: #F2F2F5;
+    font-family: Inter, system-ui, sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: Rajdhani, Inter, system-ui, sans-serif;
+  }
+}
+
+/* ── Component utilities ───────────────────────────────────────────── */
+@layer components {
+  /* Cards */
+  .hcg-card {
+    @apply rounded-lg border border-hcg-border bg-hcg-card p-4;
+  }
+
+  .hcg-card-hover {
+    @apply hcg-card transition-colors hover:bg-hcg-card-hover hover:border-hcg-blue/20 cursor-pointer;
+  }
+
+  /* Gradient text — blue/cyan */
+  .hcg-gradient-text {
+    @apply bg-gradient-to-r from-hcg-blue-mid to-hcg-blue-light bg-clip-text text-transparent;
+  }
+
+  /* Gradient text — gold (for premium elements) */
+  .hcg-gradient-text-gold {
+    @apply bg-gradient-to-r from-hcg-gold to-hcg-gold-light bg-clip-text text-transparent;
+  }
+
+  /* Gradient text — violet-to-blue (logo vibe) */
+  .hcg-gradient-text-brand {
+    @apply bg-gradient-to-br from-hcg-violet via-hcg-blue-mid to-hcg-blue bg-clip-text text-transparent;
+  }
+
+  /* Badges */
+  .hcg-badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+
+  .hcg-badge-blue {
+    @apply hcg-badge bg-hcg-blue/10 text-hcg-blue border border-hcg-blue/25;
+  }
+
+  .hcg-badge-gold {
+    @apply hcg-badge bg-hcg-gold/10 text-hcg-gold border border-hcg-gold/20;
+  }
+
+  .hcg-badge-red {
+    @apply hcg-badge bg-hcg-red/10 text-hcg-red border border-hcg-red/20;
+  }
+
+  .hcg-badge-green {
+    @apply hcg-badge bg-green-500/10 text-green-400 border border-green-500/20;
+  }
+
+  /* Buttons */
+  .hcg-btn {
+    @apply inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-hcg-blue/40 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .hcg-btn-primary {
+    @apply hcg-btn bg-hcg-blue text-hcg-bg hover:bg-hcg-blue-light active:scale-95 font-azonix tracking-wide;
+  }
+
+  .hcg-btn-secondary {
+    @apply hcg-btn bg-hcg-blue-mid/20 text-hcg-blue border border-hcg-blue-mid/30 hover:bg-hcg-blue-mid/30 active:scale-95;
+  }
+
+  .hcg-btn-ghost {
+    @apply hcg-btn text-foreground hover:bg-hcg-card-hover;
+  }
+
+  .hcg-btn-outline {
+    @apply hcg-btn border border-hcg-border text-foreground hover:border-hcg-blue/40 hover:bg-hcg-card-hover;
+  }
+
+  .hcg-btn-gold {
+    @apply hcg-btn bg-hcg-gold text-hcg-bg hover:bg-hcg-gold-light active:scale-95;
+  }
+
+  /* Input */
+  .hcg-input {
+    @apply w-full rounded-lg border border-hcg-border bg-hcg-card px-3 py-2 text-sm text-foreground placeholder:text-hcg-muted focus:outline-none focus:ring-2 focus:ring-hcg-blue/40 focus:border-hcg-blue/40;
+  }
+
+  /* Sidebar nav */
+  .sidebar-link {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-hcg-muted transition-colors hover:bg-hcg-card hover:text-foreground;
+  }
+
+  .sidebar-link-active {
+    @apply sidebar-link bg-hcg-blue/10 text-hcg-blue font-medium border-l-2 border-hcg-blue;
+  }
+
+  /* Stat cards */
+  .stat-card {
+    @apply hcg-card flex flex-col gap-1;
+  }
+
+  .section-header {
+    @apply flex items-center justify-between mb-4;
+  }
+
+  .section-title {
+    @apply text-lg font-display font-semibold text-foreground;
+  }
+
+  /* Section label (small caps, Azonix style) */
+  .section-label {
+    @apply text-hcg-blue text-xs font-azonix tracking-widest uppercase;
+  }
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0D0D1A;
+}
+::-webkit-scrollbar-thumb {
+  background: #1E2035;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00B4FF;
+}
+
+/* ── Shimmer skeleton animation ────────────────────────────────────── */
+.shimmer {
+  background: linear-gradient(90deg, #0D0D1A 25%, #131328 50%, #0D0D1A 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ── Glow effects ──────────────────────────────────────────────────── */
+.glow-blue {
+  box-shadow: 0 0 20px rgba(0, 180, 255, 0.15), 0 0 40px rgba(0, 180, 255, 0.05);
+}
+
+.glow-gold {
+  box-shadow: 0 0 20px rgba(255, 184, 0, 0.15), 0 0 40px rgba(255, 184, 0, 0.05);
+}
+
+/* ── Tier text effects ─────────────────────────────────────────────── */
+.tier-master  { text-shadow: 0 0 10px rgba(167, 139, 250, 0.6); }
+.tier-diamond { text-shadow: 0 0 10px rgba(0, 180, 255, 0.6); }
+.tier-gold    { text-shadow: 0 0 8px  rgba(255, 184, 0, 0.5); }
+
+/* ── Topographic texture overlay utility ───────────────────────────── */
+.topo-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── HC gradient — brand blue-to-cyan ──────────────────────────────── */
+.hc-brand-gradient {
+  background: linear-gradient(135deg, #8B85FF 0%, #3B7BF0 40%, #00B4FF 100%);
+}
+
+.hc-brand-gradient-text {
+  background: linear-gradient(135deg, #8B85FF 0%, #3B7BF0 40%, #00B4FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
