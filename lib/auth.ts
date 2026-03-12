@@ -14,6 +14,17 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
     error: "/auth-error",
   },
+  logger: {
+    error(code, metadata) {
+      console.error("[NEXTAUTH][ERROR]", code, JSON.stringify(metadata, null, 2));
+    },
+    warn(code) {
+      console.warn("[NEXTAUTH][WARN]", code);
+    },
+    debug(code, metadata) {
+      console.log("[NEXTAUTH][DEBUG]", code, JSON.stringify(metadata, null, 2));
+    },
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -54,6 +65,10 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      console.log("[NEXTAUTH][SIGNIN_CB] user:", user?.email, "provider:", account?.provider);
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -75,10 +90,14 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async createUser({ user }) {
-      // Create default wallet for new users
-      await db.wallet.create({
-        data: { userId: user.id },
-      });
+      console.log("[NEXTAUTH][CREATE_USER]", user?.email);
+      try {
+        await db.wallet.create({
+          data: { userId: user.id },
+        });
+      } catch (e) {
+        console.error("[NEXTAUTH][CREATE_USER][WALLET_ERROR]", e);
+      }
     },
   },
 };
