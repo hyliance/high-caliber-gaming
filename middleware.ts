@@ -34,6 +34,7 @@ export const config = {
     "/coaching/:path*",
     "/wallet/:path*",
     "/wager/:path*",
+    "/profile",
     "/profile/:path*",
     "/settings/:path*",
     "/feed/:path*",
