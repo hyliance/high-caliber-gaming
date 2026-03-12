@@ -212,8 +212,10 @@ enum ReportReason {
 
 model User {
   id              String   @id @default(cuid())
+  name            String?                        // NextAuth standard field
   email           String   @unique
   emailVerified   DateTime?
+  image           String?                        // NextAuth standard field (OAuth avatar)
   hashedPassword  String?
   gamerTag        String?  @unique
   displayName     String?
