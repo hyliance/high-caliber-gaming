@@ -7,13 +7,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 
-// On Vercel, VERCEL_URL is deployment-specific and breaks OAuth.
-// We force the stable production URL here so NextAuth always sends
-// the correct callback URL to OAuth providers.
-if (process.env.VERCEL) {
-  process.env.NEXTAUTH_URL = "https://high-caliber-gaming.vercel.app";
-}
-
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
   session: { strategy: "jwt" },
