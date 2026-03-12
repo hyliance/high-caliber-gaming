@@ -25,6 +25,7 @@ const nextConfig = {
     ],
   },
   experimental: {
+    instrumentationHook: true,
     serverActions: {
       // Allows localhost in dev; production URL is auto-detected by Vercel
       allowedOrigins: [
