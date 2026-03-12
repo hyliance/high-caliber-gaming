@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import ProfileContent, { type ProfileData } from "./ProfileContent";
 
@@ -24,24 +26,41 @@ export default async function ProfilePage({
 }) {
   const { username } = params;
 
-  /* Look up user by gamerTag (URL slug) */
-  const user = await db.user.findFirst({
-    where: { gamerTag: { equals: username, mode: "insensitive" } },
-    include: {
-      trophies: { orderBy: { awardedAt: "desc" }, take: 20 },
-      clanMembership: { include: { clan: { select: { name: true, tag: true } } } },
-      orgMemberships: {
-        where: { endDate: null },
-        take: 1,
-        include: {
-          organization: {
-            select: { name: true, abbreviation: true, primaryColor: true },
-          },
+  const INCLUDE = {
+    trophies: { orderBy: { awardedAt: "desc" as const }, take: 20 },
+    clanMembership: { include: { clan: { select: { name: true, tag: true } } } },
+    orgMemberships: {
+      where: { endDate: null as null },
+      take: 1,
+      include: {
+        organization: {
+          select: { name: true, abbreviation: true, primaryColor: true },
         },
       },
-      wallet: { select: { totalEarnedCents: true } },
     },
+    wallet: { select: { totalEarnedCents: true } },
+  };
+
+  /* Look up user by gamerTag (URL slug) */
+  let user = await db.user.findFirst({
+    where: { gamerTag: { equals: username, mode: "insensitive" } },
+    include: INCLUDE,
   });
+
+  /* Fallback: if this is the current user's profile and gamerTag lookup missed
+     (e.g. stale JWT token), find by session user ID instead. */
+  if (!user) {
+    const session = await getServerSession(authOptions);
+    if (
+      session?.user?.id &&
+      session.user.gamerTag?.toLowerCase() === username.toLowerCase()
+    ) {
+      user = await db.user.findUnique({
+        where: { id: session.user.id },
+        include: INCLUDE,
+      });
+    }
+  }
 
   if (!user) notFound();
 
