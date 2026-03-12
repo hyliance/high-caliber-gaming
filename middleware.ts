@@ -16,6 +16,11 @@ export default withAuth(
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
+    // /profile (no username) → redirect to own profile
+    if (token && token.gamerTag && pathname === "/profile") {
+      return NextResponse.redirect(new URL(`/profile/${token.gamerTag}`, req.url));
+    }
+
     return NextResponse.next();
   },
   {

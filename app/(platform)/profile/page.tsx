@@ -1,9 +1,8 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-export default async function ProfileIndexPage() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.gamerTag) redirect("/dashboard");
-  redirect(`/profile/${session.user.gamerTag}`);
+// Fallback: middleware handles /profile → /profile/:gamerTag for authenticated users.
+// Unauthenticated users are redirected to /login by middleware.
+// This page is a safety net for edge cases.
+export default function ProfileIndexPage() {
+  redirect("/dashboard");
 }
