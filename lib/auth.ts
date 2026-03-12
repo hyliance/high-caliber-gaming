@@ -64,6 +64,18 @@ export const authOptions: NextAuthOptions = {
         token.globalRole = (user as any).globalRole;
         token.avatarUrl = (user as any).avatarUrl ?? (user as any).image;
       }
+      // Re-fetch from DB if gamerTag is missing (e.g., new OAuth user completing onboarding)
+      if (token.id && !token.gamerTag) {
+        const dbUser = await db.user.findUnique({
+          where: { id: token.id as string },
+          select: { gamerTag: true, globalRole: true, avatarUrl: true, image: true },
+        });
+        if (dbUser) {
+          token.gamerTag = dbUser.gamerTag ?? undefined;
+          token.globalRole = dbUser.globalRole;
+          token.avatarUrl = dbUser.avatarUrl ?? dbUser.image ?? undefined;
+        }
+      }
       return token;
     },
     async session({ session, token }) {
