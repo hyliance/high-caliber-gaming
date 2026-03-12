@@ -12,18 +12,7 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
-    error: "/auth-error",
-  },
-  logger: {
-    error(code, metadata) {
-      console.error("[NEXTAUTH][ERROR]", code, JSON.stringify(metadata, null, 2));
-    },
-    warn(code) {
-      console.warn("[NEXTAUTH][WARN]", code);
-    },
-    debug(code, metadata) {
-      console.log("[NEXTAUTH][DEBUG]", code, JSON.stringify(metadata, null, 2));
-    },
+    error: "/login",
   },
   providers: [
     GoogleProvider({
@@ -65,16 +54,12 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
-      console.log("[NEXTAUTH][SIGNIN_CB] user:", user?.email, "provider:", account?.provider);
-      return true;
-    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.gamerTag = (user as any).gamerTag;
         token.globalRole = (user as any).globalRole;
-        token.avatarUrl = (user as any).avatarUrl;
+        token.avatarUrl = (user as any).avatarUrl ?? (user as any).image;
       }
       return token;
     },
@@ -90,13 +75,12 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async createUser({ user }) {
-      console.log("[NEXTAUTH][CREATE_USER]", user?.email);
       try {
         await db.wallet.create({
           data: { userId: user.id },
         });
       } catch (e) {
-        console.error("[NEXTAUTH][CREATE_USER][WALLET_ERROR]", e);
+        console.error("[auth] createUser wallet error:", e);
       }
     },
   },

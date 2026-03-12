@@ -22,13 +22,9 @@ function withCanonicalUrl(req: NextRequest): NextRequest {
 }
 
 export async function GET(req: NextRequest, ctx: any) {
-  const canonical = withCanonicalUrl(req);
-  console.log("[AUTH_ROUTE] GET", canonical.url, "host:", req.headers.get("host"));
-  return handler(canonical, ctx);
+  return handler(withCanonicalUrl(req), ctx);
 }
 
 export async function POST(req: NextRequest, ctx: any) {
-  const canonical = withCanonicalUrl(req);
-  console.log("[AUTH_ROUTE] POST", canonical.url, "host:", req.headers.get("host"));
-  return handler(canonical, ctx);
+  return handler(withCanonicalUrl(req), ctx);
 }
